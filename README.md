@@ -1,4 +1,4 @@
-# 183 Day Challenge — Dashboard
+# 365 Day Challenge — Dashboard
 
 Your full personal-growth dashboard: daily schedule, habit tracker, DSA
 tracker, career roadmap, fitness plan, goals, reflections, and free resources
