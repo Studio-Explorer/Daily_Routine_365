@@ -104,10 +104,18 @@ const S = {
   set(k,v){ try{localStorage.setItem("mos:"+k,JSON.stringify(v));}catch(e){} }
 };
 const now = new Date();
-const dk = now.toISOString().slice(0,10);
-function wkKey(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return "wk"+x.toISOString().slice(0,10);}
+function dateKey(d){
+  const x=new Date(d);
+  const y=x.getFullYear();
+  const m=String(x.getMonth()+1).padStart(2,"0");
+  const day=String(x.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+const dk = dateKey(now);
+function wkKey(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return "wk"+dateKey(x);}
 const meta = S.get("meta",{start:dk}); if(!meta.start){meta.start=dk;} S.set("meta",meta);
 let day  = S.get("d:"+dk, {sched:{},habits:{}});
+day.sched=day.sched||{};day.habits=day.habits||{};
 let week = S.get(wkKey(now), {});
 let dsa  = S.get("dsa", {});
 let career = S.get("career", {});
@@ -132,15 +140,14 @@ function confetti(){
     c.appendChild(p);setTimeout(()=>p.remove(),3200);
   }
 }
-function saveDay(){S.set("d:"+dk,day);}
+function saveDay(){
+  S.set("d:"+dk,day);
+  S.set("daily:lastSaved",new Date().toISOString());
+}
 function ensureMidnightReset(){
-  const lastSeen = S.get("daily:lastSeen", null);
-  if (lastSeen !== dk) {
-    day = { sched:{}, habits:{}, notes:"" };
-    S.set("d:"+dk, day);
-    S.set("daily:lastSeen", dk);
-    notes = "";
-  }
+  // The date-specific storage key already separates each day's progress.
+  // Never clear it during startup: a refresh must restore today's record.
+  S.set("daily:lastSeen", dk);
 }
 function dayPct(){
   const total=SCHEDULE[schedMode].length+HABITS.length;
@@ -747,4 +754,18 @@ function refreshMeters(){
   }
   document.getElementById("herobar").style.width=Math.round(dayN/TOTAL_DAYS*100)+"%";
 }
+
+window.addEventListener("storage",event=>{
+  if(!event.key||!event.key.startsWith("mos:"))return;
+  if(event.key==="mos:d:"+dk){
+    day=S.get("d:"+dk,{sched:{},habits:{}});
+    day.sched=day.sched||{};day.habits=day.habits||{};
+  }
+  if(event.key==="mos:"+wkKey(now))week=S.get(wkKey(now),{});
+  if(event.key==="mos:dsa")dsa=S.get("dsa",{});
+  if(event.key==="mos:career")career=S.get("career",{});
+  if(event.key==="mos:goals")goals=S.get("goals",{});
+  render();
+});
+
 render();
